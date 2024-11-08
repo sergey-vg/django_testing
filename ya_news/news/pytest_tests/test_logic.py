@@ -7,8 +7,8 @@ from .constants import COMMENT_TEXT, NEW_COMMENT_TEXT
 
 
 def test_anonymous_user_cant_create_comment(
-        client, form_data, news_detail_url
-    ):
+    client, form_data, news_detail_url
+):
     client.post(news_detail_url, data=form_data)
     comments_count = Comment.objects.count()
     assert comments_count == 0
