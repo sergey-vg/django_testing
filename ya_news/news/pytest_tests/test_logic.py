@@ -47,6 +47,7 @@ def test_user_cant_delete_comment_of_another_user(
     response = not_author_client.delete(comment_delete_url)
     assert response.status_code == HTTPStatus.NOT_FOUND
 
+
 @checking_number_comments()
 def test_author_can_edit_comment(
     author, news, author_client, comment, url_to_comments, comment_edit_url
