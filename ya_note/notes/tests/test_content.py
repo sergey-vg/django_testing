@@ -1,48 +1,40 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.urls import reverse
+from django.test import Client
 
-from notes.models import Note
 from notes.forms import NoteForm
+from .common import BaseTestCase
 
-User = get_user_model()
 
-
-class TestDetailPage(TestCase):
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.author = User.objects.create(username='Автор')
-        cls.reader = User.objects.create(username='Читатель')
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='Note1',
-            author=cls.author
-        )
+class TestContent(BaseTestCase):
 
     def test_notes_list_for_different_users(self):
+        """Тест проверяет, что отдельная заметка отображается на странице
+        со списком заметок в object_list в словаре context и что в список
+        заметок одного пользователя не попадают заметки другого пользователя.
+        """
         users_statuses = (
             (self.author, True),
             (self.reader, False),
         )
-        url = reverse('notes:list')
         for user, status in users_statuses:
-            self.client.force_login(user)
+            client_auth = Client()
+            client_auth.force_login(user)
             with self.subTest(user=user):
-                response = self.client.get(url)
+                response = client_auth.get(self.note_list_url)
                 object_list = response.context['object_list']
                 self.assertIs(self.note in object_list, status)
 
     def test_pages_contains_form(self):
-        name_args = (
-            ('notes:add', None),
-            ('notes:edit', (self.note.slug,))
+        """Тест проверяет, что на страницы создания и редактирования заметки
+        передаются формы.
+        """
+        urls = (
+            self.note_add_url,
+            self.note_edit_url
         )
-        for name, args in name_args:
-            with self.subTest(name=name):
-                url = reverse(name, args=args)
-                self.client.force_login(self.author)
-                response = self.client.get(url)
+        for url in urls:
+            with self.subTest(url=url):
+                client_auth = Client()
+                client_auth.force_login(self.author)
+                response = client_auth.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)

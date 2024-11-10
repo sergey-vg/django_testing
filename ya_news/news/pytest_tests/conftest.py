@@ -1,13 +1,21 @@
-import pytest
 from datetime import datetime, timedelta
 
-from django.test.client import Client
-from django.utils import timezone
+import pytest
+from functools import wraps
+
 from django.conf import settings
+from django.test.client import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from news.models import Comment, News
 from .constants import COMMENT_TEXT
+
+HOME_URL = reverse('news:home')
+LOGIN_URL = reverse('users:login')
+LOGOUT_URL = reverse('users:logout')
+SIGNUP_URL = reverse('users:signup')
+FORM_DATA = {'text': COMMENT_TEXT}
 
 
 @pytest.fixture
@@ -41,11 +49,6 @@ def news(author):
 
 
 @pytest.fixture
-def news_id_for_args(news):
-    return (news.id,)
-
-
-@pytest.fixture
 def all_news(author):
     today = datetime.today()
     all_news = [
@@ -57,12 +60,11 @@ def all_news(author):
         for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
     ]
     News.objects.bulk_create(all_news)
-    return all_news
 
 
 @pytest.fixture
-def news_detail_url(news_id_for_args):
-    return reverse('news:detail', args=news_id_for_args)
+def news_detail_url(news):
+    return reverse('news:detail', args=(news.id, ))
 
 
 @pytest.fixture
@@ -73,6 +75,16 @@ def comment(author, news):
         text='Текст комментария'
     )
     return comment
+
+
+@pytest.fixture
+def comment_edit_url(comment):
+    return reverse('news:edit', args=(comment.id,))
+
+
+@pytest.fixture
+def comment_delete_url(comment):
+    return reverse('news:delete', args=(comment.id,))
 
 
 @pytest.fixture
@@ -88,25 +100,19 @@ def all_comments(author, news):
 
 
 @pytest.fixture
-def comment_id_for_args(comment):
-    return (comment.id,)
-
-
-@pytest.fixture
-def url_to_comments(news_detail_url, comment_id_for_args):
+def url_to_comments(news_detail_url):
     return news_detail_url + '#comments'
 
 
-@pytest.fixture
-def comment_delete_url(comment_id_for_args):
-    return reverse('news:delete', args=comment_id_for_args)
-
-
-@pytest.fixture
-def comment_edit_url(comment_id_for_args):
-    return reverse('news:edit', args=comment_id_for_args)
-
-
-@pytest.fixture
-def form_data():
-    return {'text': COMMENT_TEXT}
+def checking_number_comments(expected_change=0):
+    def decorator(test_func):
+        @wraps(test_func)
+        def wrapper(*args, **kwargs):
+            comments_count_before = Comment.objects.count()
+            result = test_func(*args, **kwargs)
+            comments_count_after = Comment.objects.count()
+            assert comments_count_after == (
+                comments_count_before + expected_change)
+            return result
+        return wrapper
+    return decorator

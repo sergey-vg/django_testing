@@ -3,7 +3,7 @@ import pytest
 from django.conf import settings
 
 from news.forms import CommentForm
-from .constants import HOME_URL
+from .conftest import HOME_URL
 
 
 def test_news_count(client, all_news):
