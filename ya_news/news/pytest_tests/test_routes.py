@@ -25,7 +25,7 @@ from .conftest import HOME_URL, LOGIN_URL, LOGOUT_URL, SIGNUP_URL
          pytest.lazy_fixture('author_client'), HTTPStatus.OK),
         (pytest.lazy_fixture('comment_delete_url'),
          pytest.lazy_fixture('author_client'), HTTPStatus.OK),
-        (pytest.lazy_fixture('comment_edit_url'), 
+        (pytest.lazy_fixture('comment_edit_url'),
          pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
         (pytest.lazy_fixture('comment_delete_url'),
          pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
