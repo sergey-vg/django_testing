@@ -129,19 +129,6 @@ def checking_comment_fields(text=COMMENT_TEXT):
         return wrapper
     return decorator
 
-"""def checking_comment_fields(test_func):
-    @wraps(test_func)
-    def wrapper(*args, **kwargs):
-        comment = kwargs.get('comment')
-        news = kwargs.get('news')
-        author = kwargs.get('author')
-        comment_after = Comment.objects.get(id=comment.id)
-        assert comment_after.text == COMMENT_TEXT
-        assert comment_after.news == news
-        assert comment_after.author == author
-        return test_func(*args, **kwargs)
-    return wrapper"""
-
 
 @pytest.fixture
 def home_url():
