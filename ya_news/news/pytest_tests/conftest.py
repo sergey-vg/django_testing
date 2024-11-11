@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 import pytest
 from functools import wraps
-
 from django.conf import settings
 from django.test.client import Client
 from django.urls import reverse
@@ -11,10 +10,7 @@ from django.utils import timezone
 from news.models import Comment, News
 from .constants import COMMENT_TEXT
 
-HOME_URL = reverse('news:home')
-LOGIN_URL = reverse('users:login')
-LOGOUT_URL = reverse('users:logout')
-SIGNUP_URL = reverse('users:signup')
+
 FORM_DATA = {'text': COMMENT_TEXT}
 
 
@@ -96,7 +92,6 @@ def all_comments(author, news):
         )
         comment.created = now + timedelta(days=index)
         comment.save()
-    return news.comment_set.all()
 
 
 @pytest.fixture
@@ -116,3 +111,53 @@ def checking_number_comments(expected_change=0):
             return result
         return wrapper
     return decorator
+
+
+def checking_comment_fields(text=COMMENT_TEXT):
+    def decorator(test_func):
+        @wraps(test_func)
+        def wrapper(*args, **kwargs):
+            comment = kwargs.get('comment')
+            news = kwargs.get('news')
+            author = kwargs.get('author')
+            result = test_func(*args, **kwargs)
+            comment_after = Comment.objects.get(id=comment.id)
+            assert comment_after.text == text
+            assert comment_after.news == news
+            assert comment_after.author == author
+            return result
+        return wrapper
+    return decorator
+
+"""def checking_comment_fields(test_func):
+    @wraps(test_func)
+    def wrapper(*args, **kwargs):
+        comment = kwargs.get('comment')
+        news = kwargs.get('news')
+        author = kwargs.get('author')
+        comment_after = Comment.objects.get(id=comment.id)
+        assert comment_after.text == COMMENT_TEXT
+        assert comment_after.news == news
+        assert comment_after.author == author
+        return test_func(*args, **kwargs)
+    return wrapper"""
+
+
+@pytest.fixture
+def home_url():
+    return reverse('news:home')
+
+
+@pytest.fixture
+def login_url():
+    return reverse('users:login')
+
+
+@pytest.fixture
+def logout_url():
+    return reverse('users:logout')
+
+
+@pytest.fixture
+def signup_url():
+    return reverse('users:signup')

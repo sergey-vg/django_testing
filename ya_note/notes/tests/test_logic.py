@@ -2,8 +2,6 @@ from http import HTTPStatus
 
 from pytils.translit import slugify
 
-from django.test import Client
-
 from notes.models import Note
 from notes.forms import WARNING
 from .common import BaseTestCase
@@ -11,12 +9,6 @@ from .common import BaseTestCase
 
 class TestLogic(BaseTestCase):
     """Тесты для создания заметок."""
-
-    @classmethod
-    def setUpTestData(cls):
-        super().setUpTestData()
-        cls.auth_author = Client()
-        cls.auth_author.force_login(cls.author)
 
     def test_user_can_create_note(self):
         """Тест проверяет, что залогиненный пользователь
@@ -71,6 +63,7 @@ class TestLogic(BaseTestCase):
             response, 'form', 'slug', errors=(self.note.slug + WARNING)
         )
 
+    @BaseTestCase.checking_number_notes()
     def test_author_can_edit_note(self):
         """Тест проверяет, что пользователь может редактировать
         свои заметки.
@@ -85,25 +78,29 @@ class TestLogic(BaseTestCase):
     @BaseTestCase.checking_number_notes(expected_change=-1)
     def test_author_can_delete_note(self):
         """Тест проверяет, что пользователь может удалять свои заметки."""
+        note_id = self.note.id
         response = self.auth_author.post(self.note_delete_url)
         self.assertRedirects(response, self.note_success_url)
+        self.assertFalse(Note.objects.filter(id=note_id).exists())
 
     @BaseTestCase.checking_number_notes()
     def test_other_user_cant_delete_note(self):
         """Тест проверяет, что пользователь не может удалять чужие заметки."""
-        client_auth = Client()
-        client_auth.force_login(self.reader)
-        response = client_auth.post(self.note_delete_url)
+        comment_before = self.note
+        response = self.auth_reader.post(self.note_delete_url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        comment_after = Note.objects.get(slug=self.note.slug)
+        self.assertEqual(comment_before.title, comment_after.title)
+        self.assertEqual(comment_before.text, comment_after.text)
+        self.assertEqual(comment_before.slug, comment_after.slug)
+        self.assertEqual(comment_before.author, comment_after.author)
 
     def test_other_user_cant_edit_note(self):
         """Тест проверяет, что пользователь не может редактировать
         чужие заметки.
         """
         comment_before = self.note
-        client_auth = Client()
-        client_auth.force_login(self.reader)
-        response = client_auth.post(self.note_edit_url, self.form_data)
+        response = self.auth_reader.post(self.note_edit_url, self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         comment_after = Note.objects.get(slug=self.note.slug)
         self.assertEqual(comment_before.title, comment_after.title)

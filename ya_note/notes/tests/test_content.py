@@ -1,5 +1,3 @@
-from django.test import Client
-
 from notes.forms import NoteForm
 from .common import BaseTestCase
 
@@ -12,14 +10,12 @@ class TestContent(BaseTestCase):
         заметок одного пользователя не попадают заметки другого пользователя.
         """
         users_statuses = (
-            (self.author, True),
-            (self.reader, False),
+            (self.auth_author, True),
+            (self.auth_reader, False),
         )
         for user, status in users_statuses:
-            client_auth = Client()
-            client_auth.force_login(user)
             with self.subTest(user=user):
-                response = client_auth.get(self.note_list_url)
+                response = user.get(self.note_list_url)
                 object_list = response.context['object_list']
                 self.assertIs(self.note in object_list, status)
 
@@ -33,8 +29,6 @@ class TestContent(BaseTestCase):
         )
         for url in urls:
             with self.subTest(url=url):
-                client_auth = Client()
-                client_auth.force_login(self.author)
-                response = client_auth.get(url)
+                response = self.auth_author.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)

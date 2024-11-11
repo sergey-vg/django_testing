@@ -1,7 +1,7 @@
 from functools import wraps
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 
 from notes.models import Note
@@ -15,9 +15,11 @@ class BaseTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.reader = User.objects.create(username='Читатель')
+        cls.auth_reader = Client()
+        cls.auth_reader.force_login(cls.reader)
         cls.author = User.objects.create(username='Автор')
-        """cls.auth_author = Client()
-        cls.auth_author.force_login(cls.author)"""
+        cls.auth_author = Client()
+        cls.auth_author.force_login(cls.author)
         cls.note = Note.objects.create(
             title='Заголовок',
             text='Текст',
